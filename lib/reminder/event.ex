@@ -16,11 +16,16 @@ defmodule Reminder.Event do
   end
 
   def cancel(pid) do
-    case Process.alive?(pid) do
-      true ->
-        {:ok}
-      false ->
-        {:ok, "down"}
+    ref = Process.monitor(pid)
+    send(pid, {self(), ref, :cancel})
+    receive do
+      {ref, :ok, _} ->
+        Process.demonitor(ref, [:flush])
+        :ok
+      {:DOWN, ref, :process, pid, _reason} ->
+        :ok
+      {foo, ref, :process, pid, _r} ->
+        IO.puts foo
     end
   end
 
